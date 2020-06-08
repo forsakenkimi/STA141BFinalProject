@@ -9,7 +9,6 @@ library(ggpubr)
 library(DT)
 library(googleCharts)
 library(dplyr)
-library(tidycovid19)
 library(shiny)
 library(leaflet)
 library(geojsonio)
@@ -106,7 +105,7 @@ ui <- fluidPage(
             h5(textOutput("summary_new_world1")), # 1-7
             h5(textOutput("summary_new_world2")),
             h5(textOutput("summary_new_world3")),
-            leafletOutput("mymap"), # map    #1-3      ### Reference:https://shiny.rstudio.com/gallery/covid19-tracker.html###
+            leafletOutput("mymap"), # map    # 1-3      ### Reference:https://shiny.rstudio.com/gallery/covid19-tracker.html###
             plotOutput("ggplot_global_case") # 1-8
         ),
         
@@ -126,8 +125,8 @@ ui <- fluidPage(
             ), # 3-2
             mainPanel(
                 plotOutput("country_cumu"), # 3-4
-                plotOutput("country_cumu_new")
-            ) # 3-5
+                plotOutput("country_cumu_new")  # 3-5
+            )
         ),
         
         ### Reference: https://shiny.rstudio.com/gallery/google-charts.html###
@@ -236,7 +235,7 @@ server <- function(input, output, session) {
         arrange(Country) %>%
         pull(Country)
     
-    # render country list to ui
+    # render country list to ui 3-1 selection
     output$selection_a <- renderUI({
         selectInput("country1", "Country A:", choices = country_a_selection)
     })
@@ -268,7 +267,7 @@ server <- function(input, output, session) {
         mutate(daily_increse_death = lead(global_death) - global_death) # death daily increase amount
     
     
-    # 5-1
+    
     # This covid API does not update the newest data daily.
     r10 <- RETRY("GET", "https://corona.lmao.ninja/v2/nyt/states?state", pause_min = 2, times = 10)
     json <- content(r10, as = "text", encoding = "UTF-8")
@@ -289,57 +288,12 @@ server <- function(input, output, session) {
         pull(state)
     max_length <- nrow(us %>% filter(state == "Washington"))
     
+    #5-1 selection
     output$selection_state <- renderUI({
         selectInput("state", "Choose a U.S. state:", choices = selection_state)
     })
     
-    # draw map
-    worldcountry <- geojson_read("world_maps.geojson", what = "sp")
-    
-    plot_map <- worldcountry
-    
-    data_country <- summary$Countries
-    
-    
-    # country code "XK" cannot be found in countrycode package
-    data_country <- data_country %>% filter(CountryCode != "XK")
-    
-    new_data_country <- data_country %>%  mutate(iso3c = countrycode(data_country$CountryCode, "iso2c", "iso3c"))
-    
-    new_data_country1 <- new_data_country %>%
-        arrange(iso3c) %>%
-        drop_na()
-    
-    new_data_country1 %>% select(Country, CountryCode, iso3c)
-    worldcountry$ADM0_A3
-    
-    # choose available country in ADM0_A3
-    new_data_country2 <- new_data_country1[new_data_country1$iso3c %in% worldcountry$ADM0_A3, ]
-    
-    selected_countries <- new_data_country2$iso3c
-    map_polygon <- worldcountry[worldcountry$ADM0_A3 %in% selected_countries, ]
-    
-    
-    cv_pal <- colorBin("Reds", domain = 0:100, bins = c(0, 2000, 10000, 50000, 250000, 1250000, Inf))
-    cv_num <- new_data_country2$TotalConfirmed
-    
-    basemap <- leaflet(plot_map) %>%
-        addTiles() %>%
-        clearMarkers() %>%
-        clearShapes() %>%
-        addPolygons(data = map_polygon, stroke = FALSE, smoothFactor = 0.1, fillOpacity = 0.15, fillColor = ~ cv_pal(cv_num)) %>%
-        addLegend("bottomright",
-                  pal = cv_pal, values = ~ new_data_country2$TotalConfirmed,
-                  title = "<small>Total Confirmed Cases</small>"
-        )
-    
-    output$mymap <- renderLeaflet({
-        basemap
-    })
-    
-    leafletProxy("mymap")
-    
-    
+  
     
     # save iput country 1 as rv_data and corresponding data
     rv <- reactiveValues(country1_data = NULL, country2_data = NULL)
@@ -401,11 +355,50 @@ server <- function(input, output, session) {
         format(Sys.time())
     })
     
-    # 1-3 display map with covid-19 distributions
-    output$map <- renderPlot({
-        covid_map <- map_covid19()
-        covid_map
+    # 1-3 draw map
+    worldcountry <- geojson_read("world_maps.geojson", what = "sp")
+    
+    plot_map <- worldcountry
+    
+    data_country <- summary$Countries
+    
+    
+    # country code "XK" cannot be found in countrycode package
+    data_country <- data_country %>% filter(CountryCode != "XK")
+    
+    new_data_country <- data_country %>%  mutate(iso3c = countrycode(data_country$CountryCode, "iso2c", "iso3c"))
+    
+    new_data_country1 <- new_data_country %>%
+        arrange(iso3c) %>%
+        drop_na()
+    
+    new_data_country1 %>% select(Country, CountryCode, iso3c)
+    worldcountry$ADM0_A3
+    
+    # choose available country in ADM0_A3
+    new_data_country2 <- new_data_country1[new_data_country1$iso3c %in% worldcountry$ADM0_A3, ]
+    
+    selected_countries <- new_data_country2$iso3c
+    map_polygon <- worldcountry[worldcountry$ADM0_A3 %in% selected_countries, ]
+    
+    
+    cv_pal <- colorBin("Reds", domain = 0:100, bins = c(0, 2000, 10000, 50000, 250000, 1250000, Inf))
+    cv_num <- new_data_country2$TotalConfirmed
+    
+    basemap <- leaflet(plot_map) %>%
+        addTiles() %>%
+        clearMarkers() %>%
+        clearShapes() %>%
+        addPolygons(data = map_polygon, stroke = FALSE, smoothFactor = 0.1, fillOpacity = 0.15, fillColor = ~ cv_pal(cv_num)) %>%
+        addLegend("bottomright",
+                  pal = cv_pal, values = ~ new_data_country2$TotalConfirmed,
+                  title = "<small>Total Confirmed Cases</small>"
+        )
+    
+    output$mymap <- renderLeaflet({
+        basemap
     })
+    
     
     # 1-4 display title
     output$summary_table_title <- renderText({
