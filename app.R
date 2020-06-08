@@ -106,7 +106,7 @@ ui <- fluidPage(
             h5(textOutput("summary_new_world1")), # 1-7
             h5(textOutput("summary_new_world2")),
             h5(textOutput("summary_new_world3")),
-            leafletOutput("mymap"), # map    #1-3
+            leafletOutput("mymap"), # map    #1-3      ### Reference:https://shiny.rstudio.com/gallery/covid19-tracker.html###
             plotOutput("ggplot_global_case") # 1-8
         ),
         
@@ -313,7 +313,6 @@ server <- function(input, output, session) {
     new_data_country1 %>% select(Country, CountryCode, iso3c)
     worldcountry$ADM0_A3
     
-    ### Reference:https://shiny.rstudio.com/gallery/covid19-tracker.html###
     # choose available country in ADM0_A3
     new_data_country2 <- new_data_country1[new_data_country1$iso3c %in% worldcountry$ADM0_A3, ]
     
