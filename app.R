@@ -638,7 +638,7 @@ server <- function(input, output, session) {
             data = googleDataTable(dateData()),
             options = list(
                 title = sprintf(
-                    "Number of Recovered Cases vs. Number of Deaths Cases in Typical Countries ",
+                    "Number of Confirmed Cases vs. Number of Deaths Cases in Typical Countries ",
                     input$date
                 ),
                 series = series
